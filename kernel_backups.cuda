@@ -1,0 +1,162 @@
+__global__ void cells_Kernel(int width, int height, char* graph, Point* diagram, int* edge_count)
+{
+
+
+
+    int i = (blockIdx.x*blockDim.x + threadIdx.x);
+    int j = (blockIdx.y*blockDim.y + threadIdx.y);
+
+    if ((i<width) && (j < height)){
+
+        int cell_index = ((j*width) + i) * CELL_SIZE;
+        int node_index = ((j*width) + i);
+
+
+        edge_count[(j*width) + i] = createCellFromPattern(graph[(j*width) + i],
+                                                          graph[node_index - 1], graph[node_index + 1],
+                                                          diagram, cell_index,
+                                                          i, j);
+
+
+//        edge_count[(j*width) + i] = createCellFromPattern(64, 4, 0, diagram, cell_index,
+//                              i, j);
+
+    }
+}
+
+
+__global__ void triangulate_cell(int width, int height, Point* diagram, int* edge_count, int cell_size)
+{
+    int i = (blockIdx.x*blockDim.x + threadIdx.x);
+    int j = (blockIdx.y*blockDim.y + threadIdx.y);
+
+
+    if ((i<width) && (j < height)){
+        int cell_index = ((j*width) + i) * cell_size;
+        int edge_c_index = ((j*width) + i);
+
+        /* Polygon Triangulation Function */
+        triangulate_polygon(&diagram[cell_index], edge_count, edge_c_index, cell_size, i, j);
+
+        /* Set the number of triangules for the polygon */
+        //edge_count[edge_c_index] = (edge_count[edge_c_index] - 2);
+    }
+
+}
+
+template <typename T>
+__global__ void subdivision_Kernel(int width, int height, char* graph, T* diagram, T* diagram_aux, int* edge_count, bool* edge_status, int* link_index)
+{
+
+    int i = (blockIdx.x*blockDim.x + threadIdx.x);
+    int j = (blockIdx.y*blockDim.y + threadIdx.y);
+
+    if ((i<width) && (j < height)){
+
+        int cell_index = ((j*width) + i) * CELL_SIZE;
+        int node_index = ((j*width) + i);
+        //char node = graph[node_index];
+
+
+//        if ((int)(unsigned char) graph[node_index] == 90)
+//            printf(" graph[ %d ]  = %d \n", node_index,  (int)(unsigned char) graph[node_index] );
+
+//        for(int t = 0; t < edge_count[node_index]; t++)
+//        {
+
+//            link_index[cell_index + t] = -1;
+//            edge_status[cell_index + t] = false;
+
+//            bool c1 = diagram[cell_index + t].y == diagram[cell_index + mod(t+1, edge_count[node_index] )].y;
+//            bool c2 = diagram[cell_index + t].y > 0.5;
+//            bool c3 = CHECK_BIT(node, 1);
+
+//            if ( c1 && c2 && c3 )
+//            {
+//                link_index[cell_index + t] = 1;
+//                edge_status[cell_index + t] = true;
+//            }
+
+//            if ( ( diagram[cell_index + t].y == diagram[cell_index + mod(t+1, edge_count[node_index] )].y) &&
+//                 (diagram[cell_index + t].y > 0.5) &&
+//                 (CHECK_BIT(node, 1)))
+//            {
+//                link_index[cell_index + t] = 1;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( diagram[t].x == diagram[mod(t+1, edge_count[node_index])].x) &&
+//                 (diagram[t].x > 0.5) &&
+//                 (CHECK_BIT(node, 4)))
+//            {
+//                link_index[cell_index + t] = 4;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( diagram[t].y == diagram[mod(t+1, edge_count[node_index])].y) &&
+//                 (diagram[t].y < 0.5) &&
+//                 (CHECK_BIT(node, 6)))
+//            {
+//                link_index[cell_index + t] = 6;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( diagram[t].x == diagram[mod(t+1, edge_count[node_index])].x) &&
+//                 (diagram[t].x < 0.5) &&
+//                 (CHECK_BIT(node, 3)))
+//            {
+//                link_index[cell_index + t] = 3;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( ( ( diagram[mod(t+1, edge_count[node_index])].y - diagram[t].y) /
+//                     ( diagram[mod(t+1, edge_count[node_index])].x - diagram[t].x) ) == -1 ) &&
+//                 ( diagram[t].y > 0.5 ) &&
+//                 ( CHECK_BIT(node, 0 ) ) )
+//            {
+//                link_index[cell_index + t] = 0;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( ( ( diagram[mod(t+1, edge_count[node_index])].y - diagram[t].y) /
+//                     ( diagram[mod(t+1, edge_count[node_index])].x - diagram[t].x) ) == 1 ) &&
+//                 ( diagram[t].y > 0.5 ) &&
+//                 ( CHECK_BIT(node, 2 ) ) )
+//            {
+//                link_index[cell_index + t] = 2;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( ( ( diagram[mod(t+1, edge_count[node_index])].y - diagram[t].y) /
+//                     ( diagram[mod(t+1, edge_count[node_index])].x - diagram[t].x) ) == -1 ) &&
+//                 ( diagram[t].y < 0.5 ) &&
+//                 ( CHECK_BIT(node, 7 ) ) )
+//            {
+//                link_index[cell_index + t] = 7;
+//                edge_status[cell_index + t] = true;
+//            }
+
+
+//            if ( ( ( ( diagram[mod(t+1, edge_count[node_index])].y - diagram[t].y) /
+//                     ( diagram[mod(t+1, edge_count[node_index])].x - diagram[t].x) ) == 1 ) &&
+//                 ( diagram[t].y < 0.5 ) &&
+//                 ( CHECK_BIT(node, 5 ) ) )
+//            {
+//                link_index[cell_index + t] = 5;
+//                edge_status[cell_index + t] = true;
+//            }
+//        }
+
+        //checkEdges(&edge_status[cell_index], &diagram[ (node_index * CELL_SIZE)], graph[node_index], edge_count[node_index], i, j, &link_index[cell_index]);
+
+        edge_count[node_index] = subdivision(&diagram[cell_index], diagram_aux, edge_count, node_index, width, i, j, graph[node_index], &edge_status[cell_index], &link_index[cell_index]);
+
+    }
+
+}

@@ -1,0 +1,119 @@
+// Simple kernel to modify vertex positions in sine wave pattern
+__global__ void kernel(float2* pos, uchar4 *colorPos,
+                       unsigned int width, unsigned int height, float time, char* img_data, int img_widthstep)
+{
+    unsigned int x = blockIdx.x*blockDim.x + threadIdx.x;
+    unsigned int y = blockIdx.y*blockDim.y + threadIdx.y;
+
+    // calculate uv coordinates
+    float u = x / (float) width;
+    float v = y / (float) height;
+    u = u*2.0f - 1.0f;
+    v = v*2.0f - 1.0f;
+
+    // calculate simple sine wave pattern
+    float freq = 4.0f;
+    float w = sinf(u*freq + time) * cosf(v*freq + time) * 0.5f;
+
+    // write output vertex
+    //pos[y*width+x] = make_float2(u, w, v, 1.0f);
+    //pos[y*width+x] = make_float4(u, w , 1.0f, 1.0f);
+
+    colorPos[y*width+x].x = img_data[PIXEL(x/8,y/8,img_widthstep, N_CHANNELS) + 2];
+    colorPos[y*width+x].y = img_data[PIXEL(x/8,y/8,img_widthstep, N_CHANNELS) + 1];
+    colorPos[y*width+x].z = img_data[PIXEL(x/8,y/8,img_widthstep, N_CHANNELS) + 0];
+    colorPos[y*width+x].w = 0;
+
+}
+
+__global__ void kernel_Test(float4* pos, uchar4 *colorPos,
+                       unsigned int width, unsigned int height,  char* img_data, int img_widthstep)
+{
+    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+    unsigned int j = blockIdx.y*blockDim.y + threadIdx.y;
+
+    //printf("teste\n");
+
+    int scale = 5;
+
+
+    if ((i<width) && (j < height)){
+
+        int cell_index = ((j*width) + i) * CELL_SIZE;
+
+
+        pos[cell_index] = make_float4(i*scale, j*scale, 1.0f, 1.0f);
+        pos[cell_index+1] = make_float4(i*scale, j*scale + scale, 1.0f, 1.0f);
+        pos[cell_index+2] = make_float4(i*scale + scale, j*scale + scale, 1.0f, 1.0f);
+
+        pos[cell_index+3] = make_float4(i*scale + scale, j*scale + scale, 1.0f, 1.0f);
+        pos[cell_index+4] = make_float4(i*scale + scale, j*scale, 1.0f, 1.0f);
+        pos[cell_index+5] = make_float4(i*scale, j*scale, 1.0f, 1.0f);
+
+//        for (int t = cell_index + 6; t < cell_index + CELL_SIZE; t++)
+//        {
+//            pos[t] = make_float2(NULL, NULL, NULL, NULL);
+//        }
+
+
+        colorPos[cell_index] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+        colorPos[cell_index+1] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+        colorPos[cell_index+2] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+
+        colorPos[cell_index+3] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+        colorPos[cell_index+4] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+        colorPos[cell_index+5] = make_uchar4(img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1],
+                                           img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0],
+                                           0);
+
+//        for (int t = cell_index + 6; t < cell_index + CELL_SIZE; t++)
+//        {
+//            colorPos[t] = make_uchar4(NULL, NULL, NULL, NULL);
+//        }
+
+
+    }
+
+}
+
+__global__ void color_Kernel(char* img_data, int width, int height, int img_widthstep, uchar4* colorPos)
+{
+    int i = (blockIdx.x*blockDim.x + threadIdx.x);
+    int j = (blockIdx.y*blockDim.y + threadIdx.y);
+
+    if ((i < width) && (j < height)){
+
+        for (int t = 0; t < CELL_SIZE; t++)
+        {
+            int cell_index = ((j*width) + i) * CELL_SIZE;
+            colorPos[cell_index + t].x = (unsigned char) img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 2];
+            colorPos[cell_index + t].y = (unsigned char) img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 1];
+            colorPos[cell_index + t].z = (unsigned char) img_data[PIXEL(i,j,img_widthstep, N_CHANNELS) + 0];
+            colorPos[cell_index + t].w = 0;
+        }
+
+    }
+}
+
+
+kernel<<< numBlocks, threadsPerBlock>>>(pos, colorPos, 128, 128, time, img_data_d, img_widthstep);
+
+kernel_Test<<< numBlocks, threadsPerBlock>>>(pos, colorPos, img_width, img_height, img_data_d, img_widthstep);
+
+color_Kernel <<< numBlocks, threadsPerBlock >>> (img_data_d, img_width, img_height, img_widthstep, colorPos);

@@ -1,0 +1,64 @@
+
+template <typename T>
+__global__ void cc_Kernel(char* graph, int width, int height, T* diagram, int* edge_count, int* CClist, int* CCsizes)
+{
+    int i = (blockIdx.x*blockDim.x + threadIdx.x);
+    int j = (blockIdx.y*blockDim.y + threadIdx.y);
+
+    if ((i == 1) && (j == 1)){
+        printf("oi cc_kernel\n");
+        extractBorderPoints<T>(graph, width, height, diagram, edge_count, CClist, CCsizes);
+    }
+}
+
+    int avrg_size = (img_width+img_height)/2 ;
+
+    int* CClist_h = (int*)malloc( avrg_size * sizeof(int));
+    int* CClist_d;
+    cudaMalloc((void **) &(CClist_d), (avrg_size * sizeof(int) ) );
+
+    int* CCsizes_h = (int*)malloc( ( avrg_size * sizeof(int) ) );
+    int* CCsizes_d;
+    cudaMalloc((void **) &(CCsizes_d), (avrg_size * sizeof(int) ) );
+
+//    int graph_size = (img_width*img_height) ;
+
+//    /* List of already processed nodes */
+//    int* listed;
+//    cudaMalloc((void **) &listed, graph_size*sizeof(int)  );
+
+//    /* List of nodes that is not an output nor need to be recomputed  */
+//    int* discarded;
+//    cudaMalloc((void **) &discarded, graph_size*sizeof(int)  );
+
+//    int* currentListed;
+//    cudaMalloc((void **) &currentListed, graph_size*sizeof(int)  );
+
+//    int *numCC_d;
+//    int *numCC_h;
+//    cudaMalloc((void **) &numCC_d, (sizeof(int) ) );
+
+    cc_Kernel<Point> <<< numBlocks, threadsPerBlock >>> (graph_d, img_width, img_height, diagram_d, edge_count_d, CClist_d, CCsizes_d);
+    cudaThreadSynchronize();
+
+    //cudaMemcpy(numCC_h, numCC_d, sizeof(int), cudaMemcpyDeviceToHost);
+
+//    int total = 0;
+//    //int numCC = *numCC_h;
+//    //printf("numcc: %d\n", numCC);
+//    for (int j = 0; j < 2; j++)
+//    {
+//        printf("CC - %d:\n", j);
+//        for (int i = 0; i < CCsizes_h[j]; i++)
+//        {
+//            printf("%d, ", CClist_h[i + total]);
+//        }
+//        printf("\n");
+//        total += CCsizes_h[j];
+//    }
+
+
+//    cudaFree(CClist_d);
+//    cudaFree(CCsizes_d);
+//    free(CClist_h);
+//    free(CCsizes_h);

@@ -1,0 +1,287 @@
+/* Functions considering counter clockwise order for cells points */
+
+__device__ inline int mod(int i, int n) {
+    return (n + (i % n)) % n;
+}
+
+template <typename T>
+__device__ T getQ_i(int i, T* diagram, int edge_count)
+{
+    T P;
+    int p_index = i%edge_count;
+    if (p_index < 0) p_index = p_index + edge_count;
+    P.x = diagram[p_index].x;
+    P.y = diagram[p_index].y;
+
+    T P_next;
+    P_next.x = diagram[ (i+1)%edge_count ].x;
+    P_next.y = diagram[ (i+1)%edge_count ].y;
+
+    T Qi;
+
+    Qi.x = P.x/2 + (P.x + P_next.x)/4;
+
+    Qi.y = P.y/2 + (P.y + P_next.y)/4;
+
+    return Qi;
+}
+
+template <typename T>
+__device__ T getR_i(int i, T* diagram, int edge_count)
+{
+    T P;
+    int p_index = i%edge_count;
+    if (p_index < 0) p_index = p_index + edge_count;
+    P.x = diagram[p_index].x;
+    P.y = diagram[p_index].y;
+
+    T P_next;
+    P_next.x = diagram[ (i+1)%edge_count ].x;
+    P_next.y = diagram[ (i+1)%edge_count ].y;
+
+    T Ri;
+
+    Ri.x = P_next.x/2 + (P.x + P_next.x)/4;
+
+    Ri.y = P_next.y/2 + (P.y + P_next.y)/4;
+
+    return Ri;
+}
+
+template <typename T>
+__device__ bool isLinkedEdge(bool* edge_status, T* cell, char node, int index, int edge_count, int i_, int j_)
+{
+    /* Try the eight possible links of the node */
+
+    /*      UP
+      +----+----+----+
+      |    | |  |    |
+      | 0  | |  | 2  |
+      +----+----+----+
+      |    | |  |    |
+      | 3  | |  | 4  |
+      +----+----+----+
+      |    |    |    |
+      | 5  | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( cell[index].y == cell[mod(index+1, edge_count )].y) &&
+         (cell[index].y > 0.5) &&
+         (CHECK_BIT(node, 1))) return true;
+
+
+    /*      Right
+      +----+----+----+
+      |    |    |    |
+      | 0  | 1  | 2  |
+      +----+----+----+
+      |    |    |    |
+      | 3  |  --|----|
+      +----+----+----+
+      |    |    |    |
+      | 5  | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( cell[index].x == cell[mod(index+1, edge_count)].x) &&
+         (cell[index].x > 0.5) &&
+         (CHECK_BIT(node, 4))) return true;
+
+    /*      Down
+      +----+----+----+
+      |    |    |    |
+      | 0  | 1  | 2  |
+      +----+----+----+
+      |    | |  |    |
+      | 3  | |  | 4  |
+      +----+----+----+
+      |    | |  |    |
+      | 5  | |  | 7  |
+      +----+----+----+   */
+
+    if ( ( cell[index].y == cell[mod(index+1, edge_count)].y) &&
+         (cell[index].y < 0.5) &&
+         (CHECK_BIT(node, 6))) return true;
+
+    /*      Left
+      +----+----+----+
+      |    |    |    |
+      | 0  | 1  | 2  |
+      +----+----+----+
+      |    |    |    |
+      |----|--  | 4  |
+      +----+----+----+
+      |    |    |    |
+      | 5  | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( cell[index].x == cell[mod(index+1, edge_count)].x) &&
+         (cell[index].x < 0.5) &&
+         (CHECK_BIT(node, 3))) return true;
+
+    /*    Up-Left
+      +----+----+----+
+      | \  |    |    |
+      |  \ | 1  | 2  |
+      +----+----+----+
+      |    |\   |    |
+      | 3  |    | 4  |
+      +----+----+----+
+      |    |    |    |
+      | 5  | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( ( ( cell[mod(index+1, edge_count)].y - cell[index].y) /
+         ( cell[mod(index+1, edge_count)].x - cell[index].x) ) == -1 ) &&
+         ( cell[index].y > 0.5 ) &&
+         ( CHECK_BIT(node, 0 ) ) ) return true;
+
+    /*    Up-Right
+      +----+----+----+
+      |    |    | /  |
+      | 0  | 1  |/   |
+      +----+----+----+
+      |    |  / |    |
+      | 3  |    | 4  |
+      +----+----+----+
+      |    |    |    |
+      | 5  | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( ( ( cell[mod(index+1, edge_count)].y - cell[index].y) /
+         ( cell[mod(index+1, edge_count)].x - cell[index].x) ) == 1 ) &&
+         ( cell[index].y > 0.5 ) &&
+         ( CHECK_BIT(node, 0 ) ) ) return true;
+
+    /*    Down-Right
+      +----+----+----+
+      |    |    |    |
+      | 0  | 1  | 2  |
+      +----+----+----+
+      |    |    |    |
+      | 3  |  \ | 4  |
+      +----+----+----+
+      |    |    |\   |
+      | 5  | 6  | \  |
+      +----+----+----+   */
+
+    if ( ( ( ( cell[mod(index+1, edge_count)].y - cell[index].y) /
+         ( cell[mod(index+1, edge_count)].x - cell[index].x) ) == -1 ) &&
+         ( cell[index].y < 0.5 ) &&
+         ( CHECK_BIT(node, 7 ) ) ) return true;
+
+    /*    Down-Right
+      +----+----+----+
+      |    |    |    |
+      | 0  | 1  | 2  |
+      +----+----+----+
+      |    |    |    |
+      | 3  |/   | 4  |
+      +----+----+----+
+      |   /|    |    |
+      |  / | 6  | 7  |
+      +----+----+----+   */
+
+    if ( ( ( ( cell[mod(index+1, edge_count)].y - cell[index].y) /
+         ( cell[mod(index+1, edge_count)].x - cell[index].x) ) == 1 ) &&
+         ( cell[index].y < 0.5 ) &&
+         ( CHECK_BIT(node, 5 ) ) ) return true;
+
+    return false;
+
+}
+
+template <typename T>
+__device__ void checkEdges(bool* edge_status, T* cell, char node, int edge_count, int i_, int j_)
+{
+    if ( (i_ == 1) && (j_ == 1) )
+        printf(" edge_status:  %d\n", false);
+
+    /* Loop through each edge */
+    for(int i = 0; i < edge_count; i++)
+    {
+        if ((int)(unsigned char) node == 90)
+            edge_status[i] = true;
+        else
+            edge_status[i] = false;
+                //isLinkedEdge(edge_status, cell, node, i, edge_count, i_, j_);
+    }
+}
+
+template <typename T>
+__device__ int subdivision(T* cell, int edge_count, int node_index, int cell_size, int i_, int j_, char node)
+{
+//    if (( (int)(unsigned char) node == 90) )
+//    return edge_count;
+
+    T d_copy[CELL_SIZE];
+    bool edge_status[CELL_SIZE/2];
+    //int edge_status_index = 0;
+    int edge_index = 0;
+
+    for(int i = 0; i < (edge_count); i++)
+    {
+        d_copy[i] = cell[i];
+    }
+
+//    for(int i = 0; i < edge_count; i++)
+//    {
+//        if ( (i_ == 1) && (j_ == 1) )
+//            printf(" d_copy[i]  P( %2.2f, %2.2f )\n", d_copy[i].x, d_copy[i].y);
+//    }
+
+    checkEdges(edge_status, d_copy, node, edge_count, i_, j_);
+
+    if ( (i_ == 1) && (j_ == 1) )
+    {
+        for(int i = 0; i < edge_count; i++)
+        {
+            printf(" edge_status  %d\n", edge_status[i]);
+        }
+    }
+
+//    for(int i = 0; i < edge_count; i++)
+//    {
+//        if ( (i_ == 1) && (j_ == 1) )
+//            printf(" edge_status  %d\n", edge_status[i]);
+//    }
+
+    T Qi, R_previous;
+
+    for(int i = 0; i < edge_count; i++)
+    {
+
+        //if (!edge_status[i] && !edge_status[mod(i-1, edge_count)] )
+        if ( true )
+        {
+
+            Qi = getQ_i(i, d_copy, edge_count);
+
+            R_previous = getR_i(i - 1, d_copy, edge_count);
+
+//            cell[i*2].x = R_previous.x;
+//            cell[i*2].y = R_previous.y;
+
+//            cell[(i*2)+1].x = Qi.x;
+//            cell[(i*2)+1].y = Qi.y;
+
+            cell[edge_index].x = R_previous.x;
+            cell[edge_index++].y = R_previous.y;
+
+            cell[edge_index].x = Qi.x;
+            cell[edge_index++].y = Qi.y;
+        } else  {
+            cell[edge_index].x = d_copy[i].x;
+            cell[edge_index++].y = d_copy[i].y;
+        }
+
+    }
+
+//    for(int i = 0; i < (edge_count * 2); i++)
+//    {
+//        if ( (i_ == 1) && (j_ == 1) )
+//           printf(" subdividion  P( %2.2f, %2.2f )\n", diagram[i].x, diagram[i].y);
+//    }
+
+    return edge_index;
+    //return edge_count * 2;
+}
