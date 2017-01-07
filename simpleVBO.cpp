@@ -95,10 +95,7 @@ void createVBO( mappedBuffer_t* mbuf )
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
 //! Delete VBO
-////////////////////////////////////////////////////////////////////////////////
-//void deleteVBO(GLuint* vbo)
 void deleteVBO( mappedBuffer_t* mbuf )
 {
     glBindBuffer( 1, mbuf->vbo );
@@ -136,7 +133,7 @@ void runCuda()
     // map OpenGL buffer object for writing from CUDA
     float2* dptr;
     uchar4* cptr;
-    uint* iptr;
+    //uint* iptr;
     #ifdef USE_CUDA3
     size_t start;
     cudaGraphicsMapResources( 1, &vertexVBO.cudaResource, NULL );
@@ -151,19 +148,15 @@ void runCuda()
     #endif
 
     // execute the kernel
-    polygon_tri = launch_kernel( dptr, cptr, animTime, img_data, img_width, img_height, img_widthstep, polygonTCA,
-                                 graph, subdivide );
+    polygon_tri = launch_kernel( dptr, cptr, animTime,
+                                 img_data, img_width, img_height,
+                                 img_widthstep, polygonTCA, graph, subdivide );
     //img_data = &videodata[img_height*img_widthstep*++counter];
     //sleep(0.001);
 
     // unmap buffer object
-    #ifdef USE_CUDA3
-    cudaGraphicsUnmapResources( 1, &vertexVBO.cudaResource, NULL );
-    cudaGraphicsUnmapResources( 1, &colorVBO.cudaResource, NULL );
-    #else
     cudaGLUnmapBufferObject( vertexVBO.vbo );
     cudaGLUnmapBufferObject( colorVBO.vbo );
-    #endif
 }
 
 

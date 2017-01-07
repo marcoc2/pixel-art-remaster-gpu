@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef _CH_
 #pragma package <opencv>
 #endif

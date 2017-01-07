@@ -22,7 +22,7 @@ void renderCuda( int );
 
 // Callbacks
 
-int drawMode = GL_TRIANGLE_FAN; // the default draw mode
+int drawMode = VBO_RENDER; // the default draw mode
 
 // mouse controls
 int mouse_old_x, mouse_old_y;
@@ -48,12 +48,12 @@ void display( void )
     glRotatef( rotate_x, 1.0, 0.0, 0.0 );
     glRotatef( rotate_y, 0.0, 1.0, 0.0 );
 
-    float mat[ 16 ] = {
-        1.0, 0.0, 0.0, 0.0,
-        0.0, -1.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    };
+    //float mat[ 16 ] = {
+    //    1.0, 0.0, 0.0, 0.0,
+    //    0.0, -1.0, 0.0, 0.0,
+    //    0.0, 0.0, 0.0, 0.0,
+    //    0.0, 0.0, 0.0, 1.0
+    //};
 
     //glTranslatef(0.0,224*scale,0.0);
     //glMultMatrixf(mat);

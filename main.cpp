@@ -1,26 +1,18 @@
-// simpleGLmain.cpp (Rob Farber)
-
-/*
-   This wrapper demonstrates how to use the Cuda OpenGL bindings to
-   dynamically modify data using a Cuda kernel and display it with opengl.
-
-*/
-
 // includes, GL
 #include <GL/glew.h>
 #include "Image.h"
 
 // includes
+#include <helper_timer.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 #include <rendercheck_gl.h>
-#include <helper_timer.h>
 
 #include <fstream>
 #include <iostream>
 
 // The user must create the following routines:
-void initCuda(int argc, char** argv);
+void initCuda( int argc, char** argv );
 void loadTexture();
 
 // GLUT specific variables
@@ -31,7 +23,7 @@ char* file_path;
 
 int scale_graph = 20;
 
-//StopwatchInterface *timer=NULL;
+StopWatchInterface *timer = NULL;
 
 Image* img = new Image();
 Image* graph_img = new Image();
@@ -46,13 +38,13 @@ char* graph;
 char* videodata;
 
 // Forward declaration of GL functionality
-bool initGL(int argc, char** argv);
+bool initGL( int argc, char** argv );
 
 // Rendering callbacks
 void fpsDisplay(), display();
-void keyboard(unsigned char key, int x, int y);
-void mouse(int button, int state, int x, int y);
-void motion(int x, int y);
+void keyboard( unsigned char key, int x, int y );
+void mouse( int button, int state, int x, int y );
+void motion( int x, int y );
 
 
 void load_image(char* f_path, int argc)
@@ -62,7 +54,7 @@ void load_image(char* f_path, int argc)
         img->loadImage(f_path, CV_LOAD_IMAGE_COLOR );
     } else
     {
-        img->loadImage("/local/msilva/Pictures/pixelart/BlackMage.png", CV_LOAD_IMAGE_COLOR );
+        img->loadImage("/local/msilva/Pictures/pixelart/emoji_1f44c_16-2x.png", CV_LOAD_IMAGE_COLOR );
     }
     img->reverses();
     img_data = img->getImageData();
@@ -81,8 +73,6 @@ void load_image(char* f_path, int argc)
     //myfile.close();
     //img->copyByPixel(imgdata);
     //img->saveImage("/home/marco/Dropbox/Programação/Mestrado/Estudo Orientado/graph_cv_gl/video/teste.png");
-
-
 }
 
 /* Make a image representation of the graph */
@@ -96,8 +86,10 @@ void printToImage(char* graph, Image* src, Image* img_out)
     int n_j, n_i;
     int half_sg = scale_graph/2;
 
-    for(int j = 0 ; j < src->getHeight() ; j++ ) {
-        for(int i = 0 ; i < src->getWidth() ; i++ ) {
+    for(int j = 0 ; j < src->getHeight() ; j++ )
+    {
+        for(int i = 0 ; i < src->getWidth() ; i++ )
+        {
             index = (j*src->getWidth() + i);
             n_j = j*scale_graph + half_sg-1;
             n_i = i*scale_graph + half_sg-1;
@@ -106,31 +98,38 @@ void printToImage(char* graph, Image* src, Image* img_out)
                     //cvCircle( graph_img, cvPoint(((j+1)*10),((i+1)*10)), 1, CV_RGB( 0, 0, 0 ), CV_FILLED, 8, 0 );
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j+half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0, 0, 0 ), 1, CV_AA, 0 );
-                }  if CHECK_BIT(graph[index], 1)
+                }
+                if CHECK_BIT(graph[index], 1)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i,n_j+half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 2)
+                }
+                if CHECK_BIT(graph[index], 2)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j+half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 3)
+                }
+                if CHECK_BIT(graph[index], 3)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 4)
+                }
+                if CHECK_BIT(graph[index], 4)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 5)
+                }
+                if CHECK_BIT(graph[index], 5)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j-half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 6)
+                }
+                if CHECK_BIT(graph[index], 6)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i,n_j-half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
-                } if CHECK_BIT(graph[index], 7)
+                }
+                if CHECK_BIT(graph[index], 7)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j-half_sg),
                             cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
@@ -144,10 +143,10 @@ void allocate_graph()
     graph = (char*)malloc(img_width*img_height*sizeof(char));
     graph_img->createImage(img->getWidth()*scale_graph, img->getHeight()*scale_graph, IPL_DEPTH_8U, 3);
 
-    std::ifstream myfile;
-    myfile.open("/home/marco/Dropbox/Programação/Mestrado/Dissertação/debug_spline_extraction-build-desktop-Qt_4_8_1_in_PATH__System__Debug/graph.txt", std::ios_base::binary);
-    myfile.read(graph, img->getWidth()*img->getHeight());
-    myfile.close();
+    //std::ifstream myfile;
+    //myfile.open("/home/marco/Dropbox/Programação/Mestrado/Dissertação/debug_spline_extraction-build-desktop-Qt_4_8_1_in_PATH__System__Debug/graph.txt", std::ios_base::binary);
+    //myfile.read(graph, img->getWidth()*img->getHeight());
+    //myfile.close();
 }
 
 void display_graph()
@@ -164,30 +163,27 @@ void display_graph()
 }
 
 // Main program
-int main(int argc, char** argv)
+int main( int argc, char** argv )
 {
     // Create the CUTIL timer
-    //checkCudaErrors( sdkCreateTimer( &timer));
+    sdkCreateTimer( &timer );
+    sdkResetTimer( &timer );
 
-    file_path = argv[1];
-    load_image(file_path, argc);
+    file_path = argv[ 1 ];
+    load_image( file_path, argc );
     allocate_graph();
 
-    if (!initGL(argc, argv))
-    {
-        return false;
-    }
+    initGL( argc, argv );
 
-    initCuda(argc, argv);
-    //CUT_CHECK_ERROR_GL();
+    initCuda( argc, argv );
 
     // register callbacks
-    glutDisplayFunc(fpsDisplay);
-    glutKeyboardFunc(keyboard);
-    glutMouseFunc(mouse);
-    glutMotionFunc(motion);
+    glutDisplayFunc( fpsDisplay );
+    glutKeyboardFunc( keyboard );
+    glutMouseFunc( mouse );
+    glutMotionFunc( motion );
 
-    //glutDisplayFunc(display_graph);
+    //glutDisplayFunc( display );
 
     // start rendering mainloop
     glutMainLoop();
@@ -207,39 +203,38 @@ void computeFPS()
 
     if (fpsCount == fpsLimit)
     {
-        //char fps[256];
-        //float ifps = 1.f / (cutGetAverageTimerValue(timer) / 1000.f);
-        //sprintf(fps, "Cuda GL Interop Wrapper: %3.1f fps ", ifps);
-        //
-        //glutSetWindowTitle(fps);
-        //fpsCount = 0;
-        //
-        //cutilCheckError(cutResetTimer(timer));
+        char fps[256];
+        float ifps = 1.f / ( timer->getAverageTime() / 1000.f);
+        sprintf(fps, "Cuda GL Interop Wrapper: %3.1f fps ", ifps);
+
+        glutSetWindowTitle(fps);
+        fpsCount = 0;
+
+        sdkResetTimer( &timer );;
     }
 }
 
 void fpsDisplay()
 {
-    //cutilCheckError(cutStartTimer(timer));
-    //
-    //display();
-    //
-    //cutilCheckError(cutStopTimer(timer));
-    //computeFPS();
+    sdkStartTimer( &timer );
+
+    display();
+
+    sdkStopTimer( &timer );
+    computeFPS();
 }
 
 float animTime = 0.0;    // time the animation has been running
 
 // Initialize OpenGL window
-bool initGL(int argc, char **argv)
+bool initGL( int argc, char **argv )
 {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE);
-    glutInitWindowSize(window_width, window_height);
-    glutCreateWindow("Cuda GL Interop Demo (adapted from NVIDIA's simpleGL");
-    glutDisplayFunc(fpsDisplay);
-    glutKeyboardFunc(keyboard);
-    glutMotionFunc(motion);
+    glutInit( &argc, argv );
+    glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE );
+    glutInitWindowSize( window_width, window_height );
+    glutCreateWindow( "Output" );
+    glutKeyboardFunc( keyboard );
+    glutMotionFunc( motion );
 
     //### Segunda Janela (Graph) ###
 //    glutInitWindowSize(img->getWidth()*scale_graph, img->getWidth()*scale_graph);
@@ -254,25 +249,26 @@ bool initGL(int argc, char **argv)
 
     // initialize necessary OpenGL extensions
     glewInit();
-    if (! glewIsSupported("GL_VERSION_2_0 ")) {
-        fprintf(stderr, "ERROR: Support for necessary OpenGL extensions missing.");
-        fflush(stderr);
+    if( !glewIsSupported( "GL_VERSION_2_0 " ) )
+    {
+        fprintf( stderr, "ERROR: Support for necessary OpenGL extensions missing." );
+        fflush( stderr );
         return false;
     }
 
     // default initialization
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glDisable(GL_DEPTH_TEST);
+    glClearColor( 0.0, 0.0, 0.0, 1.0 );
+    glDisable( GL_DEPTH_TEST );
 
     // viewport
-    glViewport(-window_height, 0, window_width, 0);
+    glViewport( -window_height, 0, window_width, 0 );
 
     // set view matrix
-    glMatrixMode(GL_MODELVIEW);
+    glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
     // projection
-    glMatrixMode(GL_PROJECTION);
+    glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
 
 //    gluPerspective(60.0, (GLfloat)window_width / (GLfloat) window_height,
