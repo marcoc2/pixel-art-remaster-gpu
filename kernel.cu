@@ -399,47 +399,80 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     /* ********************* Beginning of the Kernel Pipeline ********************* */
 
     /* Graph Stage */
-    graph_Kernel << < numBlocks,
-    threadsPerBlock >> > ( img_data_d, img_size, img_width, img_height, img_widthstep, graph_d );
+    graph_Kernel <<< numBlocks, threadsPerBlock >>> ( img_data_d,
+                                                      img_size,
+                                                      img_width,
+                                                      img_height,
+                                                      img_widthstep,
+                                                      graph_d );
     cudaThreadSynchronize();
 
     /* Graph's Cross Check Stage (trivial case) */
-    trivial_cross_Kernel << < numBlocks, threadsPerBlock >> > ( img_width, img_height, graph_d );
+    trivial_cross_Kernel <<< numBlocks, threadsPerBlock >>> ( img_width,
+                                                              img_height,
+                                                              graph_d );
+
     cudaMemcpy( graph_d_aux, graph_d, img_width * img_height * sizeof( char ), cudaMemcpyDeviceToDevice );
     cudaThreadSynchronize();
 
     /* Graph's Heuristics Stage */
-    ambiguous_cross_Kernel << < numBlocks,
-    threadsPerBlock >> > ( img_width, img_height, graph_d, graph_d_aux, flagSync_d );
+    ambiguous_cross_Kernel <<< numBlocks, threadsPerBlock >>> ( img_width,
+                                                                img_height,
+                                                                graph_d,
+                                                                graph_d_aux,
+                                                                flagSync_d );
 
     /* Diagram Stage */
-    cells_Kernel< Point > << < numBlocks,
-    threadsPerBlock >> > ( img_width, img_height, graph_d, diagram_d, edge_count_d );
+    cells_Kernel< Point > <<< numBlocks, threadsPerBlock >>> ( img_width,
+                                                               img_height,
+                                                               graph_d,
+                                                               diagram_d,
+                                                               edge_count_d );
+
     //cells_Kernel<float2> <<< numBlocks, threadsPerBlock >>> (img_width, img_height, graph_d, pos, edge_count_d);
-    //cells_Kernel<Point> <<< numBlocks, threadsPerBlock >>> (img_width, img_height, graph_d, diagram_aux_d, edge_count_d);
-    cudaMemcpy( diagram_aux_d, diagram_d, img_width * img_height * sizeof( Point ) * CELL_SIZE,
-                cudaMemcpyDeviceToDevice );
-    cudaMemcpy( edge_count_aux_d, edge_count_d, img_width * img_height * sizeof( int ), cudaMemcpyDeviceToDevice );
+
+    cudaMemcpy( diagram_aux_d, diagram_d,
+                img_width * img_height * sizeof( Point ) * CELL_SIZE, cudaMemcpyDeviceToDevice );
+    cudaMemcpy( edge_count_aux_d, edge_count_d,
+                img_width * img_height * sizeof( int ), cudaMemcpyDeviceToDevice );
 
     /* Cell Smoothing Stage */
     if( subdivide )
     {
-        subdivision_Kernel< Point > << < numBlocks,
-        threadsPerBlock >> > ( img_data_d, img_width, img_widthstep, img_height, graph_d, diagram_d,
-                               diagram_aux_d, edge_count_d,
-                               edge_count_aux_d, edge_status_d, link_index_d );
+        subdivision_Kernel< Point > <<< numBlocks, threadsPerBlock >>> ( img_data_d,
+                                                                         img_width,
+                                                                         img_widthstep,
+                                                                         img_height,
+                                                                         graph_d,
+                                                                         diagram_d,
+                                                                         diagram_aux_d,
+                                                                         edge_count_d,
+                                                                         edge_count_aux_d,
+                                                                         edge_status_d,
+                                                                         link_index_d );
     }
 
     /* Cell's Triangulation Stage */
-    triangulate_Kernel< Point > << < numBlocks, threadsPerBlock >> > ( img_width, img_height, diagram_d, edge_count_d );
+    triangulate_Kernel< Point > <<< numBlocks, threadsPerBlock >>> ( img_width,
+                                                                     img_height,
+                                                                     diagram_d,
+                                                                     edge_count_d );
     //triangulate_cell<float2> <<< numBlocks, threadsPerBlock >>> (img_width, img_height, pos, edge_count_d, CELL_SIZE);
 
     /* Put pixel colors on an array */
-    color_kernel << < numBlocks,
-    threadsPerBlock >> > ( colorPos, img_width, img_height, img_data_d, img_widthstep, edge_count_d );
+    color_kernel <<< numBlocks, threadsPerBlock >>> ( colorPos,
+                                                      img_width,
+                                                      img_height,
+                                                      img_data_d,
+                                                      img_widthstep,
+                                                      edge_count_d );
+
     /* Put vertex coordinates on an array for VBO */
-    position_kernel< Point ><< < numBlocks,
-    threadsPerBlock >> > ( pos, diagram_d, edge_count_d, img_width, img_height );
+    position_kernel< Point ><<< numBlocks, threadsPerBlock >>> ( pos,
+                                                                 diagram_d,
+                                                                 edge_count_d,
+                                                                 img_width,
+                                                                 img_height );
 
     /* Check for errors */
     CudaCheckError();
@@ -452,27 +485,30 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
 
     printf( "Time for the kernels: %f ms\n", kernelTime );
 
-    cudaMemcpy( edge_count_h, edge_count_d, img_width * img_height * sizeof( int ), cudaMemcpyDeviceToHost );
-    cudaMemcpy( diagram_h, diagram_d, img_width * img_height * sizeof( Point ) * CELL_SIZE, cudaMemcpyDeviceToHost );
-    cudaMemcpy( graph_h, graph_d, img_width * img_height * sizeof( char ), cudaMemcpyDeviceToHost );
+    cudaMemcpy( edge_count_h, edge_count_d,
+                img_width * img_height * sizeof( int ), cudaMemcpyDeviceToHost );
+    cudaMemcpy( diagram_h, diagram_d,
+                img_width * img_height * sizeof( Point ) * CELL_SIZE, cudaMemcpyDeviceToHost );
+    cudaMemcpy( graph_h, graph_d,
+                img_width * img_height * sizeof( char ), cudaMemcpyDeviceToHost );
 
     //pos = (float2*)diagram_h;
 
     /* Degub pixel/node/cell i x j */
 
-//    int i = 8;
-//    int j = 5;
-//    int index = (i*img_width) + j;
-//    int index_cell = ( (i*img_width) + j ) * CELL_SIZE;
+    //    int i = 8;
+    //    int j = 5;
+    //    int index = (i*img_width) + j;
+    //    int index_cell = ( (i*img_width) + j ) * CELL_SIZE;
 
-//    printf("edge_count[i]: %d\n", edge_count_h[index]);
-//    printf("node[i]: %d\n", (unsigned int) (unsigned char) graph_h[index]);
+    //    printf("edge_count[i]: %d\n", edge_count_h[index]);
+    //    printf("node[i]: %d\n", (unsigned int) (unsigned char) graph_h[index]);
 
-//    printf("cell_index: %d :\n", index_cell);
-//    for (int t = 0; t < CELL_SIZE; t++){
-//        //cout << "P( " << diagram_h[i].x << ", " << diagram_h[i].y << " )" << endl;
-//        printf("P( %2.2f, %2.2f )\n", diagram_h[index_cell + t].x, diagram_h[index_cell + t].y);
-//    }
+    //    printf("cell_index: %d :\n", index_cell);
+    //    for (int t = 0; t < CELL_SIZE; t++){
+    //        //cout << "P( " << diagram_h[i].x << ", " << diagram_h[i].y << " )" << endl;
+    //        printf("P( %2.2f, %2.2f )\n", diagram_h[index_cell + t].x, diagram_h[index_cell + t].y);
+    //    }
 
     /* clean up */
     cudaFree( img_data_d );
