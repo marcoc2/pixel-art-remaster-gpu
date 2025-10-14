@@ -6,10 +6,10 @@
 #include <GL/glext.h>
 
 // includes
-#include <helper_cuda_gl.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-#include <rendercheck_gl.h>
+#include <cstdlib>
+#include <cstdio>
 
 #include "point.cu"
 
@@ -39,9 +39,14 @@ extern char* videodata;
 
 bool AA = true;
 bool subdivide = false;
+bool gl_interop_available = true;  // Track if OpenGL-CUDA interop is working
 
 float scale = 8;
 int counter = 0;
+
+// Fallback device pointers when GL interop is not available
+float2* fallback_pos_d = NULL;
+uchar4* fallback_color_d = NULL;
 
 typedef struct
 {
@@ -86,11 +91,21 @@ void createVBO( mappedBuffer_t* mbuf )
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
 
     #ifdef USE_CUDA3
-    cudaGraphicsGLRegisterBuffer( &( mbuf->cudaResource ), mbuf->vbo,
+    cudaError_t err = cudaGraphicsGLRegisterBuffer( &( mbuf->cudaResource ), mbuf->vbo,
                                   cudaGraphicsMapFlagsNone );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaGraphicsGLRegisterBuffer failed: %s\n", cudaGetErrorString(err));
+        gl_interop_available = false;
+    }
     #else
     // register buffer object with CUDA
-    cudaGLRegisterBufferObject( mbuf->vbo );
+    cudaError_t err = cudaGLRegisterBufferObject( mbuf->vbo );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "WARNING: cudaGLRegisterBufferObject failed: %s\n", cudaGetErrorString(err));
+        fprintf(stderr, "This is expected with newer CUDA versions. OpenGL interop may not work.\n");
+        gl_interop_available = false;
+        // Don't exit - continue without GL interop
+    }
     #endif
 }
 
@@ -116,6 +131,16 @@ void cleanupCuda()
 {
     deleteVBO( &vertexVBO );
     deleteVBO( &colorVBO );
+
+    // Free fallback device memory if allocated
+    if (fallback_pos_d) {
+        cudaFree(fallback_pos_d);
+        fallback_pos_d = NULL;
+    }
+    if (fallback_color_d) {
+        cudaFree(fallback_color_d);
+        fallback_color_d = NULL;
+    }
 }
 
 
@@ -130,55 +155,118 @@ void createTCA()
 ////////////////////////////////////////////////////////////////////////////////
 void runCuda()
 {
-    // map OpenGL buffer object for writing from CUDA
     float2* dptr;
     uchar4* cptr;
-    //uint* iptr;
-    #ifdef USE_CUDA3
-    size_t start;
-    cudaGraphicsMapResources( 1, &vertexVBO.cudaResource, NULL );
-    cudaGraphicsResourceGetMappedPointer( ( void** )&dptr, &start,
-                                          vertexVBO.cudaResource );
-    cudaGraphicsMapResources( 1, &colorVBO.cudaResource, NULL );
-    cudaGraphicsResourceGetMappedPointer( ( void** )&cptr, &start,
-                                          colorVBO.cudaResource );
-    #else
-    cudaGLMapBufferObject( ( void** )&dptr, vertexVBO.vbo );
-    cudaGLMapBufferObject( ( void** )&cptr, colorVBO.vbo );
-    #endif
+
+    if (!gl_interop_available) {
+        // Allocate fallback device memory if not already allocated
+        if (fallback_pos_d == NULL) {
+            size_t pos_size = img_width * img_height * CELL_SIZE * sizeof(float2);
+            cudaError_t err = cudaMalloc((void**)&fallback_pos_d, pos_size);
+            if (err != cudaSuccess) {
+                fprintf(stderr, "cudaMalloc failed for fallback_pos_d: %s\n", cudaGetErrorString(err));
+                return;
+            }
+            printf("Allocated %zu bytes for fallback vertex buffer\n", pos_size);
+        }
+
+        if (fallback_color_d == NULL) {
+            size_t color_size = img_width * img_height * CELL_SIZE * sizeof(uchar4);
+            cudaError_t err = cudaMalloc((void**)&fallback_color_d, color_size);
+            if (err != cudaSuccess) {
+                fprintf(stderr, "cudaMalloc failed for fallback_color_d: %s\n", cudaGetErrorString(err));
+                return;
+            }
+            printf("Allocated %zu bytes for fallback color buffer\n", color_size);
+        }
+
+        dptr = fallback_pos_d;
+        cptr = fallback_color_d;
+    } else {
+        // map OpenGL buffer object for writing from CUDA
+        #ifdef USE_CUDA3
+        size_t start;
+        cudaGraphicsMapResources( 1, &vertexVBO.cudaResource, NULL );
+        cudaGraphicsResourceGetMappedPointer( ( void** )&dptr, &start,
+                                              vertexVBO.cudaResource );
+        cudaGraphicsMapResources( 1, &colorVBO.cudaResource, NULL );
+        cudaGraphicsResourceGetMappedPointer( ( void** )&cptr, &start,
+                                              colorVBO.cudaResource );
+        #else
+        cudaGLMapBufferObject( ( void** )&dptr, vertexVBO.vbo );
+        cudaGLMapBufferObject( ( void** )&cptr, colorVBO.vbo );
+        #endif
+    }
 
     // execute the kernel
     polygon_tri = launch_kernel( dptr, cptr, animTime,
                                  img_data, img_width, img_height,
                                  img_widthstep, polygonTCA, graph, subdivide );
-    //img_data = &videodata[img_height*img_widthstep*++counter];
-    //sleep(0.001);
 
-    // unmap buffer object
-    cudaGLUnmapBufferObject( vertexVBO.vbo );
-    cudaGLUnmapBufferObject( colorVBO.vbo );
+    if (gl_interop_available) {
+        // unmap buffer object only if using GL interop
+        cudaGLUnmapBufferObject( vertexVBO.vbo );
+        cudaGLUnmapBufferObject( colorVBO.vbo );
+    }
 }
 
 
 void initCuda( int argc, char** argv )
 {
-    //if( cutCheckCmdLineFlag(argc, (const char**)argv, "device") )
-    //{
-    //    cutilGLDeviceInit(argc, argv);
-    //}
-    //else
-    //{
-    cudaGLSetGLDevice( 0 );     //gpuGetMaxGflopsDeviceId() );
-    //}
+    (void)argc;  // Suppress unused parameter warning
+    (void)argv;
+
+    // Simple device initialization
+    int deviceCount = 0;
+    cudaError_t err = cudaGetDeviceCount(&deviceCount);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaGetDeviceCount failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+
+    if (deviceCount == 0) {
+        fprintf(stderr, "No CUDA devices found!\n");
+        exit(1);
+    }
+
+    // Use device 0
+    err = cudaSetDevice(0);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+
+    // Print device info
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+    printf("Using CUDA device 0: %s\n", deviceProp.name);
+
+    // Clear any pending errors before starting
+    cudaGetLastError();
 
     createVBO( &vertexVBO );
     createVBO( &colorVBO );
+
+    // Clear any errors from GL interop registration and reset CUDA context
+    do {
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Clearing CUDA error: %s\n", cudaGetErrorString(err));
+        }
+    } while (err != cudaSuccess);
+
+    if (!gl_interop_available) {
+        fprintf(stderr, "NOTE: OpenGL-CUDA interop not available. VBO rendering disabled.\n");
+        fprintf(stderr, "Using fallback rendering mode (VERTEX_RENDER).\n");
+    }
+
     // make certain the VBO gets cleaned up on program exit
     atexit( cleanupCuda );
 
     // Create Triangle Count Array
     createTCA();
 
+    // Run CUDA processing (works with or without GL interop)
     runCuda();
 }
 

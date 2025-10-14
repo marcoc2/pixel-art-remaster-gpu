@@ -1,12 +1,13 @@
 // includes, GL
 #include <GL/glew.h>
+#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include "Image.h"
 
 // includes
-#include <helper_timer.h>
+
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-#include <rendercheck_gl.h>
 
 #include <fstream>
 #include <iostream>
@@ -23,7 +24,7 @@ char* file_path;
 
 int scale_graph = 20;
 
-StopWatchInterface *timer = NULL;
+
 
 Image* img = new Image();
 Image* graph_img = new Image();
@@ -51,10 +52,10 @@ void load_image(char* f_path, int argc)
 {
     if (argc > 1)
     {
-        img->loadImage(f_path, CV_LOAD_IMAGE_COLOR );
+        img->loadImage(f_path, cv::IMREAD_COLOR );
     } else
     {
-        img->loadImage("/local/msilva/Pictures/pixelart/emoji_1f44c_16-2x.png", CV_LOAD_IMAGE_COLOR );
+        img->loadImage("/local/msilva/Pictures/pixelart/emoji_1f44c_16-2x.png", cv::IMREAD_COLOR );
     }
     img->reverses();
     img_data = img->getImageData();
@@ -97,42 +98,42 @@ void printToImage(char* graph, Image* src, Image* img_out)
                 if CHECK_BIT(graph[index], 0) {
                     //cvCircle( graph_img, cvPoint(((j+1)*10),((i+1)*10)), 1, CV_RGB( 0, 0, 0 ), CV_FILLED, 8, 0 );
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j+half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0, 0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 1)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i,n_j+half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 2)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j+half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 3)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 4)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 5)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i-half_sg,n_j-half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 6)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i,n_j-half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
                 if CHECK_BIT(graph[index], 7)
                 {
                     cvLine( img_out->getImg(), cvPoint(n_i+half_sg,n_j-half_sg),
-                            cvPoint(n_i,n_j), CV_RGB( 0,  0, 0 ), 1, CV_AA, 0 );
+                            cvPoint(n_i,n_j), cvScalar(0, 0, 0, 0), 1, cv::LINE_AA, 0 );
                 }
         }
     }
@@ -165,9 +166,7 @@ void display_graph()
 // Main program
 int main( int argc, char** argv )
 {
-    // Create the CUTIL timer
-    sdkCreateTimer( &timer );
-    sdkResetTimer( &timer );
+
 
     file_path = argv[ 1 ];
     load_image( file_path, argc );
@@ -178,7 +177,7 @@ int main( int argc, char** argv )
     initCuda( argc, argv );
 
     // register callbacks
-    glutDisplayFunc( fpsDisplay );
+    glutDisplayFunc( display );
     glutKeyboardFunc( keyboard );
     glutMouseFunc( mouse );
     glutMotionFunc( motion );
@@ -189,40 +188,11 @@ int main( int argc, char** argv )
     glutMainLoop();
 
     // clean up
-    cudaThreadExit();
+    cudaDeviceReset();
     //cutilExit(argc, argv);
 }
 
-// Simple method to display the Frames Per Second in the window title
-void computeFPS()
-{
-    static int fpsCount=0;
-    static int fpsLimit=100;
 
-    fpsCount++;
-
-    if (fpsCount == fpsLimit)
-    {
-        char fps[256];
-        float ifps = 1.f / ( timer->getAverageTime() / 1000.f);
-        sprintf(fps, "Cuda GL Interop Wrapper: %3.1f fps ", ifps);
-
-        glutSetWindowTitle(fps);
-        fpsCount = 0;
-
-        sdkResetTimer( &timer );;
-    }
-}
-
-void fpsDisplay()
-{
-    sdkStartTimer( &timer );
-
-    display();
-
-    sdkStopTimer( &timer );
-    computeFPS();
-}
 
 float animTime = 0.0;    // time the animation has been running
 

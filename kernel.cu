@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>
-#include <helper_timer.h>
+
 
 #include "point.cu"
 
@@ -137,7 +137,7 @@ __global__ void position_kernel( float2* pos, T* diagram, int* edge_count, unsig
 }
 
 
-__global__ void graph_Kernel( char* a, int size, int width, int height, int img_widthstep, char* graph_out )
+__global__ void graph_Kernel( char* a, int width, int height, int img_widthstep, char* graph_out )
 {
     int i = ( blockIdx.x * blockDim.x + threadIdx.x );
     int j = ( blockIdx.y * blockDim.y + threadIdx.y );
@@ -295,14 +295,13 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     /* alex.png */
     //char graph_dump[576] = {(char) 18, (char) 26, (char) 26, (char) 26, (char) 10, (char) 18, (char) 25, (char) 24, (char) 24, (char) 28, (char) 26, (char) 26, (char) 25, (char) 24, (char) 24, (char) 28, (char) 10, (char) 18, (char) 26, (char) 26, (char) 26, (char) 26, (char) 26, (char) 10, (char) 82, (char) 90, (char) 90, (char) 90, (char) 78, (char) 196, (char) 20, (char) 26, (char) 26, (char) 10, (char) 114, (char) 202, (char) 18, (char) 26, (char) 26, (char) 9, (char) 97, (char) 83, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 46, (char) 36, (char) 112, (char) 88, (char) 72, (char) 82, (char) 74, (char) 80, (char) 88, (char) 200, (char) 130, (char) 146, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 42, (char) 34, (char) 18, (char) 10, (char) 82, (char) 74, (char) 18, (char) 26, (char) 10, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 89, (char) 92, (char) 74, (char) 66, (char) 82, (char) 74, (char) 82, (char) 73, (char) 83, (char) 90, (char) 74, (char) 70, (char) 80, (char) 92, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 201, (char) 17, (char) 12, (char) 96, (char) 67, (char) 82, (char) 78, (char) 192, (char) 147, (char) 90, (char) 90, (char) 73, (char) 81, (char) 56, (char) 12, (char) 116, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 202, (char) 130, (char) 16, (char) 8, (char) 180, (char) 74, (char) 82, (char) 90, (char) 186, (char) 90, (char) 90, (char) 202, (char) 130, (char) 16, (char) 24, (char) 8, (char) 34, (char) 114, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 78, (char) 68, (char) 20, (char) 26, (char) 9, (char) 98, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 66, (char) 16, (char) 28, (char) 10, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 46, (char) 36, (char) 228, (char) 4, (char) 64, (char) 83, (char) 89, (char) 92, (char) 90, (char) 90, (char) 73, (char) 65, (char) 19, (char) 9, (char) 97, (char) 65, (char) 83, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 46, (char) 36, (char) 32, (char) 178, (char) 202, (char) 18, (char) 10, (char) 114, (char) 206, (char) 128, (char) 147, (char) 202, (char) 130, (char) 130, (char) 146, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 42, (char) 38, (char) 80, (char) 72, (char) 80, (char) 72, (char) 80, (char) 92, (char) 186, (char) 89, (char) 72, (char) 65, (char) 65, (char) 83, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 73, (char) 81, (char) 56, (char) 24, (char) 24, (char) 24, (char) 24, (char) 8, (char) 224, (char) 16, (char) 136, (char) 134, (char) 148, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 201, (char) 129, (char) 19, (char) 25, (char) 28, (char) 26, (char) 26, (char) 26, (char) 14, (char) 20, (char) 26, (char) 14, (char) 80, (char) 44, (char) 116, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 202, (char) 130, (char) 146, (char) 201, (char) 16, (char) 8, (char) 115, (char) 89, (char) 88, (char) 92, (char) 42, (char) 114, (char) 93, (char) 58, (char) 10, (char) 34, (char) 114, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 78, (char) 68, (char) 192, (char) 20, (char) 10, (char) 146, (char) 202, (char) 20, (char) 26, (char) 10, (char) 98, (char) 194, (char) 4, (char) 116, (char) 74, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 42, (char) 50, (char) 10, (char) 98, (char) 82, (char) 74, (char) 2, (char) 114, (char) 74, (char) 66, (char) 66, (char) 2, (char) 34, (char) 98, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 73, (char) 81, (char) 72, (char) 66, (char) 82, (char) 74, (char) 64, (char) 83, (char) 73, (char) 65, (char) 67, (char) 66, (char) 66, (char) 66, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 202, (char) 130, (char) 6, (char) 4, (char) 64, (char) 83, (char) 78, (char) 144, (char) 200, (char) 129, (char) 147, (char) 73, (char) 66, (char) 66, (char) 66, (char) 66, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 78, (char) 68, (char) 84, (char) 46, (char) 180, (char) 90, (char) 90, (char) 57, (char) 136, (char) 147, (char) 206, (char) 4, (char) 64, (char) 67, (char) 64, (char) 67, (char) 82, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 42, (char) 34, (char) 114, (char) 46, (char) 112, (char) 200, (char) 19, (char) 154, (char) 90, (char) 90, (char) 46, (char) 176, (char) 72, (char) 146, (char) 73, (char) 83, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 78, (char) 68, (char) 84, (char) 90, (char) 58, (char) 154, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 58, (char) 10, (char) 194, (char) 146, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 46, (char) 36, (char) 112, (char) 92, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 89, (char) 72, (char) 65, (char) 83, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 82, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 46, (char) 48, (char) 12, (char) 112, (char) 88, (char) 88, (char) 88, (char) 88, (char) 200, (char) 17, (char) 136, (char) 147, (char) 90, (char) 90, (char) 90, (char) 90, (char) 90, (char) 74, (char) 80, (char) 88, (char) 88, (char) 88, (char) 88, (char) 88, (char) 88, (char) 56, (char) 8, (char) 48, (char) 24, (char) 24, (char) 24, (char) 24, (char) 136, (char) 16, (char) 152, (char) 88, (char) 88, (char) 88, (char) 88, (char) 88, (char) 88, (char) 72 };
 
-    StopWatchInterface* timer = NULL;
-    sdkCreateTimer( &timer );
-    sdkResetTimer( &timer );
-    sdkStartTimer( &timer );
+
 
     /* Size needed to hold image data */
     size_t img_size = img_widthstep * img_height * sizeof( char );
 
+    printf("Image dimensions: %dx%d, widthstep: %d, img_size: %zu\n",
+           img_width, img_height, img_widthstep, img_size);
 
     //size_t size = N_CHANNELS * img_width * img_height * sizeof( char );
 
@@ -313,10 +312,19 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     char* img_data_d;
 
     /* Allocates memory in device to image */
-    cudaMalloc( ( void** ) &img_data_d, img_size );
+    cudaError_t err = cudaMalloc( ( void** ) &img_data_d, img_size );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for img_data_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    printf("Allocated %zu bytes for img_data_d\n", img_size);
 
     /* Copy data from host to device */
-    cudaMemcpy( img_data_d, img_data, img_size, cudaMemcpyHostToDevice );
+    err = cudaMemcpy( img_data_d, img_data, img_size, cudaMemcpyHostToDevice );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed for img_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
 
     /*----------- Graph Device -------------*/
@@ -325,17 +333,30 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     char* graph_d;
 
     /* Allocates memory in device to graph */
-    cudaMalloc( ( void** ) &graph_d, img_width * img_height * sizeof( char ) );
+    err = cudaMalloc( ( void** ) &graph_d, img_width * img_height * sizeof( char ) );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for graph_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    printf("Allocated %d bytes for graph_d\n", img_width * img_height);
 
     /* Aux Graph data pointer to device memory */
     char* graph_d_aux;
 
     /* Allocates memory in device to graph */
-    cudaMalloc( ( void** ) &graph_d_aux, img_width * img_height * sizeof( char ) );
+    err = cudaMalloc( ( void** ) &graph_d_aux, img_width * img_height * sizeof( char ) );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for graph_d_aux: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
     /* ------- TEST FOR NOT FERMI GPUS  -------- */
     /* Copy data from host to device */
-    cudaMemcpy( graph_d, graph_h, img_width * img_height * sizeof( char ), cudaMemcpyHostToDevice );
+    err = cudaMemcpy( graph_d, graph_h, img_width * img_height * sizeof( char ), cudaMemcpyHostToDevice );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed for graph_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
 
     /*----------- Diagram Device -------------*/
@@ -349,10 +370,25 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
 
     /* Allocates memory in host to diagram */
     diagram_h = ( Point* )malloc( img_width * img_height * sizeof( Point ) * CELL_SIZE );
+    if (!diagram_h) {
+        fprintf(stderr, "malloc failed for diagram_h\n");
+        exit(1);
+    }
+
     /* Allocates memory in device to diagram */
-    cudaMalloc( ( void** ) &diagram_d, img_width * img_height * sizeof( Point ) * CELL_SIZE );
+    err = cudaMalloc( ( void** ) &diagram_d, img_width * img_height * sizeof( Point ) * CELL_SIZE );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for diagram_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    printf("Allocated %zu bytes for diagram_d\n", img_width * img_height * sizeof( Point ) * CELL_SIZE);
+
     /* Allocates memory in device to auxiliar diagram */
-    cudaMalloc( ( void** ) &diagram_aux_d, img_width * img_height * sizeof( Point ) * CELL_SIZE );
+    err = cudaMalloc( ( void** ) &diagram_aux_d, img_width * img_height * sizeof( Point ) * CELL_SIZE );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for diagram_aux_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
 
     /*----------- Polygon Edge Count Device -------------*/
@@ -367,25 +403,48 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     /* Allocates memory in host to array of vertices count */
     //edge_count_h = (int*)malloc(img_width*img_height*sizeof(int));
     /* Allocates memory in device to array of vertices count */
-    cudaMalloc( ( void** ) &edge_count_d, img_width * img_height * sizeof( int ) );
+    err = cudaMalloc( ( void** ) &edge_count_d, img_width * img_height * sizeof( int ) );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for edge_count_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+
     /* Allocates memory in device to array of vertices count */
-    cudaMalloc( ( void** ) &edge_count_aux_d, img_width * img_height * sizeof( int ) );
+    err = cudaMalloc( ( void** ) &edge_count_aux_d, img_width * img_height * sizeof( int ) );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for edge_count_aux_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
     /*-------------- Flag Array to Synchronize (still unused) ---------------*/
 
     bool* flagSync_d;
-    cudaMalloc( ( void** ) &flagSync_d, img_width * img_height * sizeof( bool ) );
+    err = cudaMalloc( ( void** ) &flagSync_d, img_width * img_height * sizeof( bool ) );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for flagSync_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
 
     /*-------------- Arrays needed on Subdivision Kernel ---------------*/
 
     bool* edge_status_d;
 
-    cudaMalloc( ( void** ) &edge_status_d, img_width * img_height * sizeof( bool ) * CELL_SIZE );
+    err = cudaMalloc( ( void** ) &edge_status_d, img_width * img_height * sizeof( bool ) * CELL_SIZE );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for edge_status_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 
     int* link_index_d;
 
-    cudaMalloc( ( void** ) &link_index_d, img_width * img_height * sizeof( int ) * CELL_SIZE );
+    err = cudaMalloc( ( void** ) &link_index_d, img_width * img_height * sizeof( int ) * CELL_SIZE );
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for link_index_d: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+
+    printf("All memory allocations completed successfully\n");
 
 
     /* set grid and blocks */
@@ -393,41 +452,82 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
     dim3 numBlocks( ( img_width / threadsPerBlock.x ) + ( img_width % threadsPerBlock.x == 0 ? 0 : 1 ),
                     ( img_height / threadsPerBlock.y ) + ( img_height % threadsPerBlock.y == 0 ? 0 : 1 ) );
 
+    printf( "threadsPerBlock = (%d, %d)\n", threadsPerBlock.x, threadsPerBlock.y );
     printf( "numblocks.x = %d\n", numBlocks.x );
     printf( "numblocks.y = %d\n", numBlocks.y );
+
+    // Check grid dimensions
+    if (numBlocks.x > 65535 || numBlocks.y > 65535) {
+        fprintf(stderr, "ERROR: Grid dimensions exceed maximum (65535)!\n");
+        fprintf(stderr, "Consider using larger thread blocks.\n");
+        exit(1);
+    }
 
     /* ********************* Beginning of the Kernel Pipeline ********************* */
 
     /* Graph Stage */
+    printf("Launching graph_Kernel...\n");
+    printf("  Parameters: img_data_d=%p, img_width=%d, img_height=%d, img_widthstep=%d, graph_d=%p\n",
+           (void*)img_data_d, img_width, img_height, img_widthstep, (void*)graph_d);
+    printf("  Grid: (%d, %d), Blocks: (%d, %d)\n",
+           numBlocks.x, numBlocks.y, threadsPerBlock.x, threadsPerBlock.y);
+
+    // Check last error before launch
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error before kernel launch: %s\n", cudaGetErrorString(err));
+    }
+
     graph_Kernel <<< numBlocks, threadsPerBlock >>> ( img_data_d,
-                                                      img_size,
                                                       img_width,
                                                       img_height,
                                                       img_widthstep,
                                                       graph_d );
-    cudaThreadSynchronize();
+
+    // Check for kernel launch errors
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "graph_Kernel launch failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+
+    cudaDeviceSynchronize();
+    CudaCheckError();
+    printf("graph_Kernel completed\n");
 
     /* Graph's Cross Check Stage (trivial case) */
+    printf("Launching trivial_cross_Kernel...\n");
     trivial_cross_Kernel <<< numBlocks, threadsPerBlock >>> ( img_width,
                                                               img_height,
                                                               graph_d );
+    cudaDeviceSynchronize();
+    CudaCheckError();
+    printf("trivial_cross_Kernel completed\n");
 
     cudaMemcpy( graph_d_aux, graph_d, img_width * img_height * sizeof( char ), cudaMemcpyDeviceToDevice );
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     /* Graph's Heuristics Stage */
+    printf("Launching ambiguous_cross_Kernel...\n");
     ambiguous_cross_Kernel <<< numBlocks, threadsPerBlock >>> ( img_width,
                                                                 img_height,
                                                                 graph_d,
                                                                 graph_d_aux,
                                                                 flagSync_d );
+    cudaDeviceSynchronize();
+    CudaCheckError();
+    printf("ambiguous_cross_Kernel completed\n");
 
     /* Diagram Stage */
+    printf("Launching cells_Kernel...\n");
     cells_Kernel< Point > <<< numBlocks, threadsPerBlock >>> ( img_width,
                                                                img_height,
                                                                graph_d,
                                                                diagram_d,
                                                                edge_count_d );
+    cudaDeviceSynchronize();
+    CudaCheckError();
+    printf("cells_Kernel completed\n");
 
     //cells_Kernel<float2> <<< numBlocks, threadsPerBlock >>> (img_width, img_height, graph_d, pos, edge_count_d);
 
@@ -479,11 +579,7 @@ extern "C" Point * launch_kernel( float2 * pos, uchar4 * colorPos, float time,
 
     /* ********************* End of the Kernel Pipeline ********************* */
 
-    sdkStopTimer( &timer );
-    float kernelTime = sdkGetTimerValue( &timer );
-    sdkDeleteTimer( &timer );
 
-    printf( "Time for the kernels: %f ms\n", kernelTime );
 
     cudaMemcpy( edge_count_h, edge_count_d,
                 img_width * img_height * sizeof( int ), cudaMemcpyDeviceToHost );

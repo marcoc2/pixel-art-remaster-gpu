@@ -1,16 +1,20 @@
 //callbacksVBO.cpp (Rob Farber)
 // includes, GL
 #include <GL/glew.h>
+#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 // includes
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-#include <rendercheck_gl.h>
+#include <cstdlib>
+#include <cstdio>
 
 extern float animTime;
 extern float scale;
 extern bool AA;
 extern bool subdivide;
+extern bool gl_interop_available;
 
 #define VBO_RENDER 88
 #define VERTEX_RENDER 99
@@ -62,8 +66,12 @@ void display( void )
     runCuda();
 
     // render the data
-    renderCuda( drawMode );
-    //renderCuda(88);
+    // Use VERTEX_RENDER if GL interop is not available and using VBO_RENDER
+    int actualDrawMode = drawMode;
+    if (!gl_interop_available && drawMode == VBO_RENDER) {
+        actualDrawMode = VERTEX_RENDER;
+    }
+    renderCuda( actualDrawMode );
 
     glutSwapBuffers();
     glutPostRedisplay();

@@ -41,7 +41,11 @@ void Image::reverses()
 /** Loads an image from file */
 void Image::loadImage( const char* path, int colorness )
 {
-    img = cvLoadImage( path, colorness );
+    cv::Mat mat = cv::imread( path, colorness );
+    IplImage* temp = cvCreateImage(cvSize(mat.cols, mat.rows), IPL_DEPTH_8U, mat.channels());
+    IplImage ipltemp = cvIplImage(mat);
+    cvCopy(&ipltemp, temp);
+    img = temp;
     width = img->width;
     height = img->height;
     widthStep = img->widthStep;
@@ -63,11 +67,11 @@ void Image::createImage( int width, int height, int depth, int n_channels )
 /** Create a file for the image */
 void Image::saveImage( const char* file_name )
 {
-    int p[ 3 ];
-    p[ 0 ] = CV_IMWRITE_PNG_COMPRESSION;
-    p[ 1 ] = 100;
-    p[ 2 ] = 0;
-    cvSaveImage( file_name, img, p );
+    cv::Mat mat = cv::cvarrToMat(img);
+    std::vector<int> compression_params;
+    compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
+    cv::imwrite(file_name, mat, compression_params);
 }
 
 
@@ -89,7 +93,7 @@ void Image::resizeImage( Image* dst )
 /** Sets every element of array to given value */
 void Image::setAllPixels( int c1, int c2, int c3 )
 {
-    cvSet( img, CV_RGB( c1, c2, c3 ), 0 );
+    cvSet( img, cvScalar( c3, c2, c1, 0 ), 0 );
 }
 
 

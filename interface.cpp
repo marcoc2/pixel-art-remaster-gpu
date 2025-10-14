@@ -11,7 +11,6 @@
 #include <cutil_inline.h>
 #include <cutil_gl_inline.h>
 #include <cuda_gl_interop.h>
-#include <rendercheck_gl.h>
 
 extern float animTime;
 
